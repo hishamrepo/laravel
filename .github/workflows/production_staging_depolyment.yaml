@@ -36,15 +36,15 @@ jobs:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.SERVICE_ECR_REPO_NAME }}
           tags: |
             type=raw,value=${{ github.sha }}
-      - name: Build and push
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./Dockerfile		  
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          tags: ${{ steps.metadata.outputs.tags }}
-      - name: Move cache
+      - name: Build, tag, and push the image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.SERVICE_ECR_REPO_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          # Build a docker container and push it to ECR 
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Pushing image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
