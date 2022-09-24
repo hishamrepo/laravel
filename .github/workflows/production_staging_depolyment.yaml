@@ -29,15 +29,6 @@ jobs:
       - name: Set up Docker Buildkit
         uses: docker/setup-buildx-action@v1
         id: buildx
-      - name: Cache Docker layers
-        id: cache-venv  # name for referring later
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
       - name: Get Tags for Image
         id: metadata
         uses: docker/metadata-action@v3
@@ -49,11 +40,10 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
+          file: ./Dockerfile		  
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
