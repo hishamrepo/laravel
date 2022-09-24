@@ -1,30 +1,32 @@
-FROM php:8.1.0-apache
+# syntax = docker/dockerfile:experimental
+FROM python:3.7-buster as builder
 
-USER root
+## virtualenv setup
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-WORKDIR /var/www/html
+WORKDIR /app
+COPY requirements.txt requirements.txt
 
-RUN apt-get update && apt-get install -y \
-        libpng-dev \
-        zlib1g-dev \
-        libxml2-dev \
-        libzip-dev \
-        libonig-dev \
-        zip \
-        curl \
-        unzip \
-    && docker-php-ext-configure gd \
-    && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install pdo_mysql \
-    && docker-php-ext-install mysqli \
-    && docker-php-ext-install zip \
-    && docker-php-source delete
+RUN pip3 install --upgrade pip
 
-COPY .docker/vhost.conf /etc/apache2/sites-available/000-default.conf
+RUN pip3 install wheel && pip3 install -r requirements.txt
+FROM python:3.7-slim-buster as runtime
+# Create user to run as
+RUN adduser --disabled-password flaskuser
+RUN apt-get -y update && apt-get -y install default-libmysqlclient-dev 
 
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN mkdir -p /app/migrations/
+RUN chown -R flaskuser:flaskuser /app/migrations/
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/var/www/html --filename=composer
+COPY . /app
 
-RUN chown -R www-data:www-data /var/www/html \
-    && a2enmod rewrite
+RUN chmod +x /app/start-server.sh
+
+WORKDIR /app
+USER flaskuser
+
+CMD ["sh", "/app/start-server.sh"]
