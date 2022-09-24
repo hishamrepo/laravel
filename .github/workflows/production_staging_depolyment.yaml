@@ -1,8 +1,4 @@
 name: develop-workflow
-concurrency: #avoid concurrent runs on label events, might cause issues on super fast commits  ¯\_(ツ)_/¯
-  #group: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-  group: ${{ github.head_ref }}
-  #cancel-in-progress: true
 
 on:
   push:
