@@ -21,6 +21,8 @@ jobs:
         with:
           role-to-assume: 'arn:aws:iam::${{ secrets.AWS_DEV_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_TO_PUSH_IMG }}'
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Login to Amazon ECR
         id: login-ecr
